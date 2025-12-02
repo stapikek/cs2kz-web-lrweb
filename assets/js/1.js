@@ -5,22 +5,7 @@
     let translationsLoaded = false;
     
     function loadTranslations() {
-        let lang = 'RU';
-        
-        if (typeof window.LR_LANG !== 'undefined') {
-            lang = window.LR_LANG;
-        } else if (typeof window.LANGUAGE !== 'undefined') {
-            lang = window.LANGUAGE;
-        } else if (document.documentElement.lang) {
-            lang = document.documentElement.lang;
-        } else {
-            const htmlLang = document.documentElement.getAttribute('lang');
-            if (htmlLang) {
-                lang = htmlLang.toUpperCase();
-            }
-        }
-        
-        console.log('Detected language:', lang);
+        const lang = window.LR_LANG || window.LANGUAGE || 'RU';
         
         fetch('/app/modules/module_page_kz_records/translation.json')
             .then(response => response.json())
@@ -30,24 +15,14 @@
                     translations[key] = data[key][lang] || data[key]['RU'];
                 });
                 translationsLoaded = true;
-                console.log('Translations loaded for language:', lang, translations);
             })
-            .catch(error => {
-                console.error('Failed to load translations:', error);
+            .catch(() => {
                 translationsLoaded = true;
             });
     }
     
     function t(key) {
-        if (translationsLoaded && translations[key]) {
-            return translations[key];
-        }
-        if (!translationsLoaded) {
-            console.warn('Translations not loaded yet for key:', key);
-        } else {
-            console.warn('Translation not found for key:', key, 'Language:', typeof window.LR_LANG !== 'undefined' ? window.LR_LANG : 'RU');
-        }
-        return key;
+        return (translationsLoaded && translations[key]) ? translations[key] : key;
     }
     
     function validateMapName(mapName) {
@@ -70,19 +45,7 @@
             validateMapName.dangerousPatterns = [
                 /union|select|insert|update|delete|drop|create|alter|exec|script/i,
                 /<script|javascript:|vbscript:|onload|onerror|onclick/i,
-                /--|\/\*|\*\//i,
-                /xp_|sp_|fn_|char|nchar|varchar|nvarchar|text|ntext/i,
-                /image|binary|varbinary|bit|tinyint|smallint|int|bigint/i,
-                /real|float|decimal|numeric|money|smallmoney/i,
-                /datetime|smalldatetime|timestamp|uniqueidentifier|sql_variant/i,
-                /table|view|procedure|function|trigger|index|constraint|key/i,
-                /foreign|primary|check|default|null|identity|seed|increment/i,
-                /collate|with|for|grant|revoke|deny|backup|restore/i,
-                /bulk|openrowset|opendatasource|openquery|linked|server/i,
-                /remote|distributed|transaction|commit|rollback|savepoint/i,
-                /begin|end|if|else|while|break|continue|goto|return/i,
-                /throw|try|catch|waitfor|raiserror|print|declare|set/i,
-                /exec|execute|sp_executesql/i
+                /--|\/\*|\*\//i
             ];
         }
         
@@ -105,20 +68,6 @@
         return true;
     }
     
-    function sanitizeInput(input) {
-        if (typeof input !== 'string') {
-            return '';
-        }
-        
-        return input.trim()
-            .replace(/[<>"\']/g, '')
-            .replace(/[&]/g, '&amp;')
-            .replace(/[<]/g, '&lt;')
-            .replace(/[>]/g, '&gt;')
-            .replace(/["]/g, '&quot;')
-            .replace(/[']/g, '&#x27;');
-    }
-    
     loadTranslations();
     
     
@@ -135,9 +84,8 @@
             return;
         }
         
-        const sanitizedMapName = sanitizeInput(mapName);
-        loadMapRecords(sanitizedMapName);
-        updateURL(sanitizedMapName);
+        loadMapRecords(mapName);
+        updateURL(mapName);
     };
     
     
@@ -172,9 +120,8 @@
             return;
         }
         
-        const sanitizedMapName = sanitizeInput(mapName);
-        loadMapRecords(sanitizedMapName);
-        updateURL(sanitizedMapName);
+        loadMapRecords(mapName);
+        updateURL(mapName);
         const mobileContent = document.querySelector('.mobile-maps-content');
         if (mobileContent) {
             mobileContent.classList.remove('active');
@@ -233,7 +180,6 @@
         });
     }
     
-    
     function highlightActiveMap() {
         const activeMapItem = document.querySelector('.map-item.active');
         if (activeMapItem) {
@@ -242,32 +188,6 @@
                 block: 'center' 
             });
         }
-    }
-    
-    
-    function initCopyLinks() {
-        const steamLinks = document.querySelectorAll('.action-btn[href*="steamcommunity.com"]');
-        steamLinks.forEach(link => {
-            link.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                const url = link.getAttribute('href');
-                if (navigator.clipboard) {
-                    navigator.clipboard.writeText(url).then(() => {
-                        showToast('Steam profile link copied!', 'success');
-                    });
-                }
-            });
-        });
-    }
-    
-    
-    
-    function optimizeTrophyIcons() {
-        const trophies = document.querySelectorAll('.col-place i.fa-trophy');
-        trophies.forEach(trophy => {
-            const color = trophy.style.color;
-            trophy.setAttribute('data-color', color);
-        });
     }
     
     
@@ -286,8 +206,7 @@
         
         showLoadingIndicator(leaderboardBody);
         
-        const sanitizedMapName = sanitizeInput(mapName);
-        const apiUrl = `${window.location.origin}/app/modules/module_page_kz_records/api/index.php?endpoint=records&map=${encodeURIComponent(sanitizedMapName)}`;
+        const apiUrl = `${window.location.origin}/app/modules/module_page_kz_records/api/index.php?endpoint=records&map=${encodeURIComponent(mapName)}`;
         
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000); 
@@ -302,7 +221,7 @@
             })
             .then(data => {
                 if (data.success) {
-                    updateLeaderboard(data.data, sanitizedMapName);
+                    updateLeaderboard(data.data, mapName);
                 } else {
                     showError(t('_loading_records_error') + ': ' + data.error);
                 }
@@ -313,7 +232,7 @@
                     showError('Request timeout. Please try again.');
                 } else {
                     const url = new URL(window.location);
-                    url.searchParams.set('map', sanitizedMapName);
+                    url.searchParams.set('map', mapName);
                     window.location.href = url.toString();
                 }
             })
@@ -393,8 +312,6 @@
                 </div>
             `;
         }
-        
-        initCopyLinks();
     }
     
     function updateActiveMap(mapName) {
@@ -453,8 +370,6 @@
         initMobileAutoClose();
         initOutsideClick();
         initKeyboardNavigation();
-        initCopyLinks();
-        optimizeTrophyIcons();
         initBrowserHistory();
         
         highlightActiveMap();

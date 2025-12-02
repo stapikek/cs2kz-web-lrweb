@@ -26,43 +26,16 @@ $t = function($key) use ($Translate) {
 };
 
 $current_map = $KzRecords->getConfig()['display']['default_map'];
-if (isset($_GET['map'])) {
+if (isset($_GET['map']) && is_string($_GET['map'])) {
     $map_param = trim($_GET['map']);
-    
-    if (preg_match('/^[a-zA-Z0-9_-]+$/', $map_param) && strlen($map_param) <= 64 && strlen($map_param) >= 1) {
-        $dangerous_patterns = [
-            '/union/i', '/select/i', '/insert/i', '/update/i', '/delete/i',
-            '/drop/i', '/create/i', '/alter/i', '/exec/i', '/script/i',
-            '/<script/i', '/javascript:/i', '/vbscript:/i', '/onload/i',
-            '/onerror/i', '/onclick/i', '/--/i', '/\/\*/i', '/\*\//i'
-        ];
-        
-        $is_safe = true;
-        foreach ($dangerous_patterns as $pattern) {
-            if (preg_match($pattern, $map_param)) {
-                $is_safe = false;
-                break;
-            }
-        }
-        
-        if ($is_safe) {
-            $current_map = $map_param;
-        } else {
-            $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-            $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
-            error_log("KzRecordsModule: Potential SQL injection attempt in interface - Map: '{$map_param}' | IP: {$ip} | User-Agent: {$user_agent}");
-        }
-    } else {
-        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-        $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
-        error_log("KzRecordsModule: Invalid map name in URL - Map: '{$map_param}' | IP: {$ip} | User-Agent: {$user_agent}");
+    if (preg_match('/^[a-zA-Z0-9_-]{1,64}$/', $map_param)) {
+        $current_map = $map_param;
     }
 }
 
 $maps = $KzRecords->getMaps();
 $records = $KzRecords->getMapRecords($current_map);
 $stats = $KzRecords->getStatistics();
-$config = $KzRecords->getConfig();
 ?>
 
 <div class="kz-records-module">

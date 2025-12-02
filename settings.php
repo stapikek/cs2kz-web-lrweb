@@ -14,9 +14,7 @@ return [
     // Настройки отображения
     'display' => [
         'default_map' => 'kz_grotto',
-        'records_per_page' => 50,
-        'map_division' => false,
-        'default_tab' => 'kz'
+        'records_per_page' => 50
     ],
     
     // Настройки кеширования

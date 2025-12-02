@@ -64,9 +64,7 @@ class KzRecordsModule {
             ],
             'display' => $module_settings['display'] ?? [
                 'default_map' => 'kz_longjumps2',
-                'records_per_page' => 50,
-                'map_division' => true,
-                'default_tab' => 'kz'
+                'records_per_page' => 50
             ],
             'cache' => $module_settings['cache'] ?? [
                 'enabled' => true,
@@ -122,12 +120,9 @@ class KzRecordsModule {
     
     public function getConfig() {
         return [
-            'db' => $this->settings['database'],
             'display' => [
                 'default_map' => $this->settings['display']['default_map'] ?? 'kz_longjumps2',
-                'limit' => $this->settings['display']['records_per_page'] ?? 100,
-                'map_division' => $this->settings['display']['map_division'] ?? true,
-                'tab_opened' => $this->settings['display']['default_tab'] ?? 'kz'
+                'limit' => $this->settings['display']['records_per_page'] ?? 100
             ]
         ];
     }
@@ -153,24 +148,7 @@ class KzRecordsModule {
             $dangerous_patterns = [
                 '/union|select|insert|update|delete|drop|create|alter|exec|script/i',
                 '/<script|javascript:|vbscript:|onload|onerror|onclick/i',
-                '/--|\/\*|\*\//i',
-                '/xp_|sp_|fn_|char|nchar|varchar|nvarchar|text|ntext/i',
-                '/image|binary|varbinary|bit|tinyint|smallint|int|bigint/i',
-                '/real|float|decimal|numeric|money|smallmoney/i',
-                '/datetime|smalldatetime|timestamp|uniqueidentifier|sql_variant/i',
-                '/table|view|procedure|function|trigger|index|constraint|key/i',
-                '/foreign|primary|check|default|null|identity|seed|increment/i',
-                '/collate|with|for|grant|revoke|deny|backup|restore/i',
-                '/bulk|openrowset|opendatasource|openquery|linked|server/i',
-                '/remote|distributed|transaction|commit|rollback|savepoint/i',
-                '/begin|end|if|else|while|break|continue|goto|return/i',
-                '/throw|try|catch|waitfor|raiserror|print|declare|set/i',
-                '/exec|execute|sp_executesql|open|close|fetch|deallocate/i',
-                '/cursor|global|local|static|dynamic|forward_only|scroll/i',
-                '/keyset|fast_forward|read_only|scroll_locks|optimistic/i',
-                '/type_warning|holdlock|nolock|readpast|readuncommitted/i',
-                '/repeatableread|serializable|snapshot|updlock|xlock/i',
-                '/paglock|tablock|tablockx|rowlock|nowait|readcommitted/i'
+                '/--|\/\*|\*\//i'
             ];
         }
         
@@ -249,18 +227,6 @@ class KzRecordsModule {
         return $data;
     }
     
-    public function clearCache() {
-        $cache_dir = MODULESCACHE . '/module_page_kz_records';
-        if (is_dir($cache_dir)) {
-            $files = glob($cache_dir . '/*');
-            foreach ($files as $file) {
-                if (is_file($file)) {
-                    unlink($file);
-                }
-            }
-        }
-    }
-    
     public function getMaps() {
         $cache_key = 'maps';
         
@@ -315,19 +281,7 @@ class KzRecordsModule {
         if (!$this->validateMapName($map_name)) {
             $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
             $request_uri = $_SERVER['REQUEST_URI'] ?? 'unknown';
-            
-            KzSecurityHelper::logInjectionAttempt($ip, [
-                'map_name' => $map_name,
-                'user_agent' => $user_agent,
-                'request_uri' => $request_uri
-            ]);
-            
-            if (!KzSecurityHelper::checkInjectionAttempts($ip)) {
-                error_log("KzRecordsModule: IP blocked due to repeated injection attempts - IP: {$ip}");
-                return [];
-            }
-            
-            error_log("KzRecordsModule: Potential SQL injection attempt detected - Map: '{$map_name}' | IP: {$ip} | User-Agent: {$user_agent} | URI: {$request_uri}");
+            error_log("KzRecordsModule: Invalid map name - Map: '{$map_name}' | IP: {$ip} | User-Agent: {$user_agent} | URI: {$request_uri}");
             return [];
         }
         

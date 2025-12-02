@@ -1,24 +1,9 @@
 <?php
 
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
 
 if (!defined('IN_LR')) {
     define('IN_LR', true);
-}
-
-if (!defined('STORAGE')) {
-    define('STORAGE', 'storage/');
-}
-if (!defined('MODULESCACHE')) {
-    define('MODULESCACHE', STORAGE . 'modules_cache/');
 }
 
 require_once('app/modules/module_page_kz_records/forward/data.php');
@@ -49,18 +34,6 @@ if (!$KzRecords->isConnected()) {
 }
 
 $endpoint = $_GET['endpoint'] ?? 'stats';
-
-function sanitizeInput($input) {
-    if (!is_string($input)) {
-        return '';
-    }
-    
-    $input = trim($input);
-    $input = htmlspecialchars($input, ENT_QUOTES, 'UTF-8');
-    $input = strip_tags($input);
-    $input = preg_replace('/[<>"\']/', '', $input);
-    return $input;
-}
 
 function sendResponse($data, $statusCode = 200) {
     http_response_code($statusCode);
@@ -97,19 +70,7 @@ function validateMapName($map) {
         $dangerous_patterns = [
             '/union|select|insert|update|delete|drop|create|alter|exec|script/i',
             '/<script|javascript:|vbscript:|onload|onerror|onclick/i',
-            '/--|\/\*|\*\//i',
-            '/xp_|sp_|fn_|char|nchar|varchar|nvarchar|text|ntext/i',
-            '/image|binary|varbinary|bit|tinyint|smallint|int|bigint/i',
-            '/real|float|decimal|numeric|money|smallmoney/i',
-            '/datetime|smalldatetime|timestamp|uniqueidentifier|sql_variant/i',
-            '/table|view|procedure|function|trigger|index|constraint|key/i',
-            '/foreign|primary|check|default|null|identity|seed|increment/i',
-            '/collate|with|for|grant|revoke|deny|backup|restore/i',
-            '/bulk|openrowset|opendatasource|openquery|linked|server/i',
-            '/remote|distributed|transaction|commit|rollback|savepoint/i',
-            '/begin|end|if|else|while|break|continue|goto|return/i',
-            '/throw|try|catch|waitfor|raiserror|print|declare|set/i',
-            '/exec|execute|sp_executesql/i'
+            '/--|\/\*|\*\//i'
         ];
     }
     
@@ -157,24 +118,10 @@ try {
             break;
         
         case 'records':
-            $map = $_GET['map'] ?? null;
+            $map = isset($_GET['map']) && is_string($_GET['map']) ? trim($_GET['map']) : null;
             
-            if (!$map) {
-                sendError('Map parameter is required');
-            }
-            
-            $original_map = $map;
-            $map = sanitizeInput($map);
-            
-            if (!validateMapName($map)) {
-                $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-                $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
-                error_log("KZ API: Potential SQL injection attempt - Map: '{$original_map}' | IP: {$ip} | User-Agent: {$user_agent}");
-                sendError('Invalid map name format');
-            }
-
-            if (strlen($map) > 64 || strlen($map) < 1) {
-                sendError('Map name length invalid');
+            if (!$map || !validateMapName($map)) {
+                sendError('Invalid map parameter');
             }
             
             $records = $KzRecords->getMapRecords($map);
@@ -190,24 +137,10 @@ try {
             break;
         
         case 'map_info':
-            $map = $_GET['map'] ?? null;
+            $map = isset($_GET['map']) && is_string($_GET['map']) ? trim($_GET['map']) : null;
             
-            if (!$map) {
-                sendError('Map parameter is required');
-            }
-            
-            $original_map = $map;
-            $map = sanitizeInput($map);
-            
-            if (!validateMapName($map)) {
-                $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-                $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
-                error_log("KZ API: Potential SQL injection attempt - Map: '{$original_map}' | IP: {$ip} | User-Agent: {$user_agent}");
-                sendError('Invalid map name format');
-            }
-            
-            if (strlen($map) > 64 || strlen($map) < 1) {
-                sendError('Map name length invalid');
+            if (!$map || !validateMapName($map)) {
+                sendError('Invalid map parameter');
             }
             
             $records = $KzRecords->getMapRecords($map);

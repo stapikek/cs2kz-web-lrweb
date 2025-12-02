@@ -3,7 +3,7 @@
     "info": "Статистика рекордов режима KZ",
     "author": "stapi",
     "page": "kz",
-    "version": "1.0.1",
+    "version": "2.0.0",
     "required": {
         "core": "0.2",
         "php": "7.4"
